@@ -21,14 +21,22 @@ jobs:
         os:
           - ubuntu-latest
           - macos-latest
+        # dir is where bazel runs; slug is a path-free name for cache keys.
         workspace:
-          - .
-          - test/test_workspace
-          - kramer
+          - { dir: ., slug: root }
+          - { dir: test/test_workspace, slug: tw }
+          - { dir: kramer, slug: kramer }
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - name: Install the Android SDK components test_workspace pins
+        # test_workspace's android_sdk_repository pins api_level 29 / build-tools
+        # 29.0.3, which the runner images no longer ship. Runs before setup-java
+        # because the image's sdkmanager needs the image's default (newer) JDK.
+        if: matrix.workspace.slug == 'tw'
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-29" "build-tools;29.0.3"
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 11
@@ -36,13 +44,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository
-          key: m2-${{ runner.os }}-${{ matrix.workspace }}-${{ hashFiles('**/WORKSPACE', '**/*.bzl', 'maven/kramer-resolve.jar') }}
+          key: m2-${{ runner.os }}-${{ matrix.workspace.slug }}-${{ hashFiles('**/WORKSPACE', '**/*.bzl', 'maven/kramer-resolve.jar') }}
           restore-keys: |
-            m2-${{ runner.os }}-${{ matrix.workspace }}-
+            m2-${{ runner.os }}-${{ matrix.workspace.slug }}-
             m2-${{ runner.os }}-
       - name: Setup bazelisk for Bazel builds
         uses: bazelbuild/setup-bazelisk@v3
-      - name: Build ${{ matrix.workspace }}
-        run: (cd ${{ matrix.workspace }} && bazel build //...)
-      - name: Test ${{ matrix.workspace }}
-        run: (cd ${{ matrix.workspace }} && bazel test //...)
+      - name: Build ${{ matrix.workspace.dir }}
+        run: (cd ${{ matrix.workspace.dir }} && bazel build //...)
+      - name: Test ${{ matrix.workspace.dir }}
+        run: (cd ${{ matrix.workspace.dir }} && bazel test //...)
