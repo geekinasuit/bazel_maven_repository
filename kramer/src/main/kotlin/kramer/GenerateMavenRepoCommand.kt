@@ -29,6 +29,7 @@ import com.squareup.tools.maven.resolution.FetchStatus
 import com.squareup.tools.maven.resolution.FetchStatus.RepositoryFetchStatus.FETCH_ERROR
 import com.squareup.tools.maven.resolution.FetchStatus.RepositoryFetchStatus.SUCCESSFUL
 import com.squareup.tools.maven.resolution.FetchStatus.RepositoryFetchStatus.SUCCESSFUL.FOUND_IN_CACHE
+import com.squareup.tools.maven.resolution.HttpArtifactFetcher
 import com.squareup.tools.maven.resolution.Repositories.Companion.DEFAULT
 import com.squareup.tools.maven.resolution.ResolutionResult
 import com.squareup.tools.maven.resolution.ResolvedArtifact
@@ -129,6 +130,16 @@ class GenerateMavenRepo(
   @FlowPreview
   @ExperimentalCoroutinesApi
   override fun run() {
+    try {
+      generate()
+    } finally {
+      kontext.shutdownHttp()
+    }
+  }
+
+  @FlowPreview
+  @ExperimentalCoroutinesApi
+  private fun generate() {
     val repoSpec = kontext.parseJson(specificationFile, RepositorySpecification::class)
     with(repoSpec.validate()) {
       if (isNotEmpty()) {
@@ -395,6 +406,7 @@ class GenerateMavenRepo(
     return ArtifactResolver(
       cacheDir = kontext.localRepository,
       suppressAddRepositoryWarnings = true,
+      fetcher = HttpArtifactFetcher(kontext.localRepository, kontext.httpClient),
       repositories = if (kontext.repositories.isNotEmpty()) kontext.repositories else DEFAULT,
       modelInterceptor = ::filterBuildDeps
     )

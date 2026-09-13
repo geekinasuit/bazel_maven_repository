@@ -107,6 +107,18 @@ class FetchArtifactIntegrationTest {
     assertThat(output).contains("Attempted from [https://repo.maven.apache.org/maven2,")
   }
 
+  /**
+   * A pooled HTTP/2 connection's reader thread is non-daemon. If one outlives the command, a
+   * `java -jar` invocation cannot exit until the pool's idle timeout (5 minutes) evicts it, which is
+   * longer than the repository rule's timeout. Fetching from an empty cache forces real connections.
+   * [HttpShutdownIntegrationTest] checks that such a thread really does exist before shutdown.
+   */
+  @Test fun releasesHttpThreadsOnCompletion() {
+    cmd.test(flags("org.ow2.asm:asm:7.1"), baos)
+    assertWithMessage("Non-daemon OkHttp threads outlived the command")
+      .that(survivingOkHttpThreads()).isEmpty()
+  }
+
   private val FetchArtifactCommand.dir get() = workspace.resolve(fetchCommand.prefix)
   private fun FetchArtifactCommand.assertExists(path: String) {
     val file = dir.resolve(path)

@@ -30,6 +30,7 @@ import com.squareup.tools.maven.resolution.FetchStatus.RepositoryFetchStatus.FET
 import com.squareup.tools.maven.resolution.FetchStatus.RepositoryFetchStatus.NOT_FOUND
 import com.squareup.tools.maven.resolution.FetchStatus.RepositoryFetchStatus.SUCCESSFUL
 import com.squareup.tools.maven.resolution.FetchStatus.RepositoryFetchStatus.SUCCESSFUL.FOUND_IN_CACHE
+import com.squareup.tools.maven.resolution.HttpArtifactFetcher
 import com.squareup.tools.maven.resolution.ResolvedArtifact
 import java.io.IOException
 import java.nio.file.Files
@@ -81,6 +82,7 @@ internal class FetchArtifactCommand : CliktCommand(name = "fetch-artifact") {
     val resolver = ArtifactResolver(
       cacheDir = kontext.localRepository,
       suppressAddRepositoryWarnings = true,
+      fetcher = HttpArtifactFetcher(kontext.localRepository, kontext.httpClient),
       repositories = repositories,
       modelInterceptor = ::filterBuildDeps
     )
@@ -126,6 +128,14 @@ internal class FetchArtifactCommand : CliktCommand(name = "fetch-artifact") {
   }
 
   override fun run() {
+    try {
+      fetchAndMaterialize()
+    } finally {
+      kontext.shutdownHttp()
+    }
+  }
+
+  private fun fetchAndMaterialize() {
     var result: FetchResult? = null
     val benchmark = measureTimeMillis {
       result = fetch(artifactSpec)
