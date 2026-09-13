@@ -1,23 +1,11 @@
 workspace(name = "test_workspace")
 
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-
-MAVEN_REPOSITORY_RULES_VERSION = "2.0.0-alpha-3"
-
-MAVEN_REPOSITORY_RULES_CHECKSUM = "853976a2e4908f010568aad8f47b1a1e87e258f33b114e6e92599dc2779938c4"
-
-# Create a bazel workspace to represent the maven universe.
-http_archive(
+# Create a bazel workspace to represent the maven universe, using the rules and the checked-in
+# kramer jar from this repository rather than a published release.
+local_repository(
     name = "maven_repository_rules",
-    sha256 = MAVEN_REPOSITORY_RULES_CHECKSUM,
-    strip_prefix = "bazel_maven_repository-%s" % MAVEN_REPOSITORY_RULES_VERSION,
-    type = "zip",
-    urls = ["https://github.com/square/bazel_maven_repository/archive/%s.zip" % MAVEN_REPOSITORY_RULES_VERSION],
+    path = "..",
 )
-#local_repository(
-#    name = "maven_repository_rules",
-#    path = "..",
-#)
 
 load("@maven_repository_rules//maven:maven.bzl", "maven_repository_specification")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
