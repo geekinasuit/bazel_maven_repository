@@ -2,15 +2,14 @@
 
 name: CI
 
-# Controls when the action will run. Triggers the workflow on push or pull request
-# events but only for the master branch
+# Runs on pushes to master and release branches, and on every pull request whatever its base
+# branch, so a PR stacked on another PR's branch still gets checks.
 on:
   push:
     branches:
       - master
       - release*
   pull_request:
-    branches: [ master ]
 
 jobs:
   test:
