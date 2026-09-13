@@ -42,3 +42,22 @@ fun CliktCommand.fail(args: List<String>, output: ByteArrayOutputStream): String
     throw AssertionError("Unexpected exception running command:\n $output", e)
   }
 }
+
+/** Names of the live, non-daemon OkHttp threads in this JVM (connection readers, notably). */
+fun liveOkHttpThreads(): List<String> = Thread.getAllStackTraces().keys
+  .filter { it.isAlive && !it.isDaemon && it.name.startsWith("OkHttp") }
+  .map { it.name }
+
+/**
+ * Names of the non-daemon OkHttp threads still alive after waiting up to [timeoutMillis] for them
+ * to end. A closed connection's reader thread exits asynchronously, hence the wait.
+ */
+fun survivingOkHttpThreads(timeoutMillis: Long = 5_000): List<String> {
+  val deadline = System.currentTimeMillis() + timeoutMillis
+  var survivors = liveOkHttpThreads()
+  while (survivors.isNotEmpty() && System.currentTimeMillis() < deadline) {
+    Thread.sleep(100)
+    survivors = liveOkHttpThreads()
+  }
+  return survivors
+}

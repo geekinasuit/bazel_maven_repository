@@ -38,6 +38,21 @@ kt_jvm_test(
 )
 
 kt_jvm_test(
+    name = "HttpShutdownIntegrationTest",
+    size = "medium",
+    srcs = ["HttpShutdownIntegrationTest.kt"],
+    friends = ["//src/main/kotlin/kramer"],
+    test_class = "kramer.integration.HttpShutdownIntegrationTest",
+    deps = [
+        ":testlib",
+        "//src/main/kotlin/kramer",
+        "@maven//com/google/truth",
+        "@maven//com/squareup/okhttp3:okhttp",
+        "@maven//junit",
+    ],
+)
+
+kt_jvm_test(
     name = "GenerateMavenRepoIntegrationTest",
     size = "large",
     srcs = ["GenerateMavenRepoIntegrationTest.kt"],

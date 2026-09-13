@@ -23,16 +23,28 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.path
 import com.squareup.tools.maven.resolution.GlobalConfig
+import com.squareup.tools.maven.resolution.ProxyHelper
 import com.squareup.tools.maven.resolution.Repositories
 import java.io.PrintStream
 import java.nio.file.FileSystem
 import java.nio.file.FileSystems
 import java.nio.file.Path
+import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.system.exitProcess
+import okhttp3.OkHttpClient
 import org.apache.maven.model.Repository
 
-fun main(vararg argv: String) = Kramer()
-  .subcommands(FetchArtifactCommand(), GenerateMavenRepo())
-  .main(argv.toList())
+fun main(vararg argv: String) {
+  Kramer()
+    .subcommands(FetchArtifactCommand(), GenerateMavenRepo())
+    .main(argv.toList())
+  // Only the success path reaches here: clikt calls exitProcess for every failure it handles
+  // (usage errors, ProgramResult, help), and an uncaught exception ends the JVM non-zero on its
+  // own. Exit explicitly rather than returning: a pooled HTTP connection's reader thread is
+  // non-daemon and would otherwise keep the JVM alive until the pool's idle timeout (minutes).
+  exitProcess(0)
+}
 
 internal class Kramer(
   fs: FileSystem = FileSystems.getDefault(),
@@ -85,6 +97,30 @@ internal class Kontext(
   lateinit var settings: Settings
 
   lateinit var config: KramerConfig
+
+  private val httpClients = Collections.newSetFromMap(ConcurrentHashMap<OkHttpClient, Boolean>())
+
+  /**
+   * Supplies the resolver's HTTP clients (proxy-aware, as maven-archeologist's own default is) while
+   * keeping a handle on each so [shutdownHttp] can release them. Every client the helper returns
+   * shares one connection pool and dispatcher, so releasing through any of them drains them all.
+   */
+  val httpClient: (url: String) -> OkHttpClient = { url ->
+    ProxyHelper.createProxyingClientFromEnv(url).also { httpClients.add(it) }
+  }
+
+  /**
+   * Closes pooled connections so their reader threads end with the command. A reader thread
+   * inherits daemon status from whichever thread opened the connection: fetch-artifact opens it
+   * from the main thread, so the reader is non-daemon and would otherwise hold the JVM open until
+   * the pool's idle timeout; gen-maven-repo opens it from a coroutine dispatcher's daemon worker,
+   * so it only benefits from releasing the sockets. Every request is made with the synchronous
+   * `execute()`, which never touches the dispatcher's executor; if an async `enqueue()` is ever
+   * introduced, shut that executor down here too.
+   */
+  fun shutdownHttp() {
+    httpClients.forEach { it.connectionPool.evictAll() }
+  }
 
   val repositories: List<Repository> by lazy {
     val mirrors = settings.mirrors.map { it.id to it.url }.toMap()

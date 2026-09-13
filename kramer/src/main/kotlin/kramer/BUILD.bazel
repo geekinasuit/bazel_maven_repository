@@ -22,6 +22,7 @@ kt_jvm_library(
         "@maven//com/google/guava",
         "@maven//com/squareup/moshi",
         "@maven//com/squareup/moshi:moshi-kotlin",
+        "@maven//com/squareup/okhttp3:okhttp",
         "@maven//com/squareup/tools/build:maven-archeologist",
         "@maven//org/jetbrains/kotlin:kotlin-stdlib",
         "@maven//org/jetbrains/kotlinx:kotlinx-coroutines-core",
