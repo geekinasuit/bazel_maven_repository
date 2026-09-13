@@ -1,3 +1,10 @@
+# WORKSPACE-only for now; bzlmod migration is tracked separately. Also keeps the main
+# repository's runfiles directory at the workspace name, which the integration tests rely on.
+common --noenable_bzlmod
+# Pin the Java runtime tests execute under: the JUnit runner still installs a SecurityManager,
+# which JDK 18+ refuses.
+build --java_runtime_version=remotejdk_17
+
 test --test_output=errors
 test --verbose_failures
 build --strategy=KotlinCompile=worker

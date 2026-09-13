@@ -1,1 +1,7 @@
+# WORKSPACE-only for now; bzlmod migration is tracked separately.
+common --noenable_bzlmod
+# Parity with kramer/ and test/test_workspace/, where the pinned runtime matters (JUnit runner
+# vs JDK 18+); the root workspace runs no Java tests itself.
+build --java_runtime_version=remotejdk_17
+
 try-import %workspace%/user.bazelrc
