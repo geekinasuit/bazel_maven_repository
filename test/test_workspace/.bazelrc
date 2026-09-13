@@ -1,6 +1,19 @@
+# WORKSPACE-only for now; bzlmod migration is tracked separately.
+common --noenable_bzlmod
+# Pin the Java runtime tests execute under: the JUnit runner still installs a SecurityManager,
+# which JDK 18+ refuses.
+build --java_runtime_version=remotejdk_17
+
 build --strategy=KotlinCompile=worker
 test --test_output=errors
-build --experimental_desugar_java8_libs=true
+# Java 8 library desugaring is off because no backend/SDK combination survives on this Bazel:
+# the default (d8) path rejects the --auto_desugar_shadowed_api_use flag that
+# desugar_java8_legacy_libs passes it; the legacy path (--define=android_desugaring_tool=legacy)
+# cannot launch its Desugar main class on Bazel 7, and on Bazel 6 fails on
+# java.util.List.reversed()/SequencedCollection with android-35 or, with android-34 and
+# build-tools 30.0.3 (the last with dx.jar), in the java8_legacy_dex genrule ("Ill-advised or
+# mistaken usage of a core class"). Lowering api_level does not rescue it.
+build --experimental_desugar_java8_libs=false
 build --experimental_check_desugar_deps=true
 build --strategy=Desugar=sandboxed
 

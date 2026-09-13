@@ -29,16 +29,16 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Install the Android SDK components test_workspace pins
-        # test_workspace's android_sdk_repository pins api_level 29 / build-tools
-        # 29.0.3, which the runner images no longer ship. Runs before setup-java
-        # because the image's sdkmanager needs the image's default (newer) JDK.
+        # Must match test_workspace's android_sdk_repository (api_level / build_tools_version).
+        # Runs before setup-java because the image's sdkmanager needs the image's default
+        # (newer) JDK.
         if: matrix.workspace.slug == 'tw'
         run: |
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-29" "build-tools;29.0.3"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 11
+          java-version: 17
       - name: Mount maven cache
         uses: actions/cache@v4
         with:
