@@ -11,7 +11,7 @@
 # or implied. See the License for the specific language governing permissions and limitations under
 # the License.
 #
-load("@io_bazel_rules_kotlin//kotlin:kotlin.bzl", "kt_jvm_library", "kt_jvm_test")
+load("@rules_kotlin//kotlin:jvm.bzl", "kt_jvm_library", "kt_jvm_test")
 
 kt_jvm_library(
     name = "testlib",
@@ -27,11 +27,10 @@ kt_jvm_test(
     size = "large",
     srcs = ["FetchArtifactIntegrationTest.kt"],
     data = glob(["*.json"]),
-    friends = ["//src/main/kotlin/kramer"],
+    associates = ["//src/main/kotlin/kramer"],
     test_class = "kramer.integration.FetchArtifactIntegrationTest",
     deps = [
         ":testlib",
-        "//src/main/kotlin/kramer",
         "@maven//com/google/truth",
         "@maven//junit",
     ],
@@ -41,11 +40,10 @@ kt_jvm_test(
     name = "HttpShutdownIntegrationTest",
     size = "medium",
     srcs = ["HttpShutdownIntegrationTest.kt"],
-    friends = ["//src/main/kotlin/kramer"],
+    associates = ["//src/main/kotlin/kramer"],
     test_class = "kramer.integration.HttpShutdownIntegrationTest",
     deps = [
         ":testlib",
-        "//src/main/kotlin/kramer",
         "@maven//com/google/truth",
         "@maven//com/squareup/okhttp3:okhttp",
         "@maven//junit",
@@ -57,11 +55,10 @@ kt_jvm_test(
     size = "large",
     srcs = ["GenerateMavenRepoIntegrationTest.kt"],
     data = glob(["*.json"]),
-    friends = ["//src/main/kotlin/kramer"],
+    associates = ["//src/main/kotlin/kramer"],
     test_class = "kramer.integration.GenerateMavenRepoIntegrationTest",
     deps = [
         ":testlib",
-        "//src/main/kotlin/kramer",
         "@maven//com/google/truth",
         "@maven//junit",
     ],
