@@ -21,30 +21,41 @@ http_archive(
     urls = ["https://github.com/bazelbuild/rules_android/archive/v0.1.1.zip"],
 )
 
-KOTLIN_VERSION = "1.3.71"
+# rules_java pinned ahead of rules_kotlin. rules_kotlin 1.9.6's kotlin_repositories() pulls a
+# rules_java too old for Bazel 7.7.1's test infra (@bazel_tools//tools/test:lcov_merger loads
+# @rules_java//java:java_binary.bzl, which the old one lacks). maybe() in kotlin_repositories() is
+# first-wins, so declaring a Bazel-7-compatible rules_java here keeps it.
+http_archive(
+    name = "rules_java",
+    sha256 = "8afd053dd2a7b85a4f033584f30a7f1666c5492c56c76e04eec4428bdb2a86cf",
+    urls = ["https://github.com/bazelbuild/rules_java/releases/download/7.6.5/rules_java-7.6.5.tar.gz"],
+)
 
-KOTLINC_RELEASE_SHA = "7adb77dad99c6d2f7bde9f8bafe4c6244a04587a8e36e62b074d00eda9f8e74a"
+load("@rules_java//java:repositories.bzl", "rules_java_dependencies", "rules_java_toolchains")
 
-KOTLINC_RELEASE_URL = "https://github.com/JetBrains/kotlin/releases/download/v{v}/kotlin-compiler-{v}.zip".format(v = KOTLIN_VERSION)
+rules_java_dependencies()
 
-KOTLIN_RULES_VERSION = "legacy-1.4.0-rc3"
+rules_java_toolchains()
 
-KOTLIN_RULES_SHA = "da0e6e1543fcc79e93d4d93c3333378f3bd5d29e82c1bc2518de0dbe048e6598"
+# Kotlin stdlib/test version this workspace links against; matches the rules_kotlin default compiler.
+KOTLIN_VERSION = "1.9.23"
 
-KOTLIN_RULES_URL = "https://github.com/bazelbuild/rules_kotlin/releases/download/%s/rules_kotlin_release.tgz" % KOTLIN_RULES_VERSION
+KOTLIN_RULES_VERSION = "v1.9.6"
+
+KOTLIN_RULES_SHA = "3b772976fec7bdcda1d84b9d39b176589424c047eb2175bed09aac630e50af43"
+
+KOTLIN_RULES_URL = "https://github.com/bazelbuild/rules_kotlin/releases/download/%s/rules_kotlin-%s.tar.gz" % (KOTLIN_RULES_VERSION, KOTLIN_RULES_VERSION)
 
 http_archive(
-    name = "io_bazel_rules_kotlin",
+    name = "rules_kotlin",
     sha256 = KOTLIN_RULES_SHA,
     urls = [KOTLIN_RULES_URL],
 )
 
-load("@io_bazel_rules_kotlin//kotlin:kotlin.bzl", "kotlin_repositories", "kt_register_toolchains")
+load("@rules_kotlin//kotlin:repositories.bzl", "kotlin_repositories")
 
-kotlin_repositories(compiler_release = {
-    "urls": [KOTLINC_RELEASE_URL],
-    "sha256": KOTLINC_RELEASE_SHA,
-})
+# No args: use the rules' default kotlinc (1.9.23 for v1.9.6).
+kotlin_repositories()
 
 register_toolchains("//:kotlin_toolchain")
 

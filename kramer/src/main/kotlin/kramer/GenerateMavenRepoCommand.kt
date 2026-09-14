@@ -395,6 +395,10 @@ class GenerateMavenRepo(
             kontext.out { "ERROR: Could not resolve ${artifact.coordinate}: ${status.message}" }
             status.error?.let { kontext.info { it.formatStackTrace() } }
           }
+          // Kotlin 1.9 requires `when` statements over a sealed type to be exhaustive; pre-1.7 this
+          // branch list was allowed to be partial. Only FETCH_ERROR gets a detailed message — every
+          // other status still falls through to the unresolved/exit handling below, as before.
+          else -> {}
         }
         unresolved.add(artifact.coordinate)
         exit.set(1)

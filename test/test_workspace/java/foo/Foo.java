@@ -19,6 +19,11 @@ public class Foo {
     return o instanceof Foo && this.strings.equals(((Foo) o).strings);
   }
 
+  @Override
+  public int hashCode() {
+    return strings.hashCode();
+  }
+
   @dagger.Component
   interface FooComponent {
     Bar bar();
